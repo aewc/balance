@@ -1,3 +1,6 @@
+type Result = variant { Ok; Err : text };
 service : {
-    "greet": (text) -> (text) query;
+  balance_of : (principal) -> (nat64) query;
+  mint : (nat64) -> (Result);
+  transfer : (principal, nat64) -> (Result);
 }

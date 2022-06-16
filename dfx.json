@@ -6,15 +6,6 @@
       "type": "rust",
       "package": "balance",
       "candid": "src/balance/balance.did"
-    },
-    "balance_assets": {
-      "type": "assets",
-      "source": [
-        "src/balance_assets/assets"
-      ],
-      "dependencies": [
-        "balance"
-      ]
     }
   },
   "defaults": {
