@@ -52,7 +52,7 @@ fn transfer(to: Principal, amount: u64) -> Result<(), String> {
         let mut state = s.borrow_mut();
         state
             .insert(to_slice, to_balance_new.to_be_bytes().to_vec())
-            .unwrap_or_else(|err| trap(&format!("insert to error: {}", err)))
+            .unwrap_or_else(|err| trap(&format!("insert to error: {}", err)));
     });
     Ok(())
 }
@@ -71,10 +71,17 @@ fn mint(amount: u64) -> Result<(), String> {
         let mut state = s.borrow_mut();
         state
             .insert(caller_slice, caller_balance_new.to_be_bytes().to_vec())
-            .unwrap_or_else(|err| trap(&format!("insert caller balance error: {}", err)))
+            .unwrap_or_else(|err| trap(&format!("insert caller balance error: {}", err)));
     });
 
     Ok(())
+}
+
+#[post_upgrade]
+fn post_upgrade() {
+    STATE.with(|s| {
+        s.replace(StableBTreeMap::load(StableStorage::new()));
+    });
 }
 
 #[cfg(any(target_arch = "wasm32", test))]
