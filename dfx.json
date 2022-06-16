@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "dfx": "0.9.3",
+  "canisters": {
+    "balance": {
+      "type": "rust",
+      "package": "balance",
+      "candid": "src/balance/balance.did"
+    },
+    "balance_assets": {
+      "type": "assets",
+      "source": [
+        "src/balance_assets/assets"
+      ],
+      "dependencies": [
+        "balance"
+      ]
+    }
+  },
+  "defaults": {
+    "build": {
+      "packtool": "",
+      "args": ""
+    }
+  },
+  "networks": {
+    "local": {
+      "bind": "127.0.0.1:8000",
+      "type": "ephemeral"
+    }
+  }
+}
