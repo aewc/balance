@@ -1,18 +1,24 @@
 use candid::{candid_method, Principal};
-use ic_cdk::{api::trap, caller};
+use ic_cdk::{api::stable, api::trap, caller};
 use ic_cdk_macros::*;
 use stable_structures::{stable_storage::StableStorage, StableBTreeMap};
 use std::cell::RefCell;
 use std::convert::TryInto;
 
 thread_local! {
-    static STATE: RefCell<StableBTreeMap<StableStorage>> = RefCell::new(StableBTreeMap::new(StableStorage::new(), 29, 8));
+    static STATE: RefCell<StableBTreeMap<StableStorage>> = RefCell::new(StableBTreeMap::load(StableStorage::default()));
 }
 
-#[candid_method(query)]
-#[query]
-fn balance_of(owner: Principal) -> u64 {
-    let owner = owner.as_slice().to_vec();
+#[init]
+#[candid_method(init)]
+fn init() {
+    StableBTreeMap::new(StableStorage::default(), 29, 8);
+}
+
+#[candid_method(query, rename = "balance_of")]
+#[query(name = "balance_of")]
+fn balance_of(owner1: Principal) -> u64 {
+    let owner = owner1.as_slice().to_vec();
     STATE.with(|s| {
         let state = s.borrow();
         let result = state.get(&owner);
@@ -26,8 +32,8 @@ fn balance_of(owner: Principal) -> u64 {
     })
 }
 
-#[candid_method(update)]
-#[update]
+#[candid_method(update, rename = "transfer")]
+#[update(name = transfer)]
 fn transfer(to: Principal, amount: u64) -> Result<(), String> {
     let caller = caller();
     let caller_slice = caller.as_slice().to_vec();
@@ -57,8 +63,8 @@ fn transfer(to: Principal, amount: u64) -> Result<(), String> {
     Ok(())
 }
 
-#[candid_method(update)]
-#[update]
+#[candid_method(update, rename = "mint")]
+#[update(name = "mint")]
 fn mint(amount: u64) -> Result<(), String> {
     let caller = caller();
     let caller_slice = caller.as_slice().to_vec();
@@ -77,11 +83,41 @@ fn mint(amount: u64) -> Result<(), String> {
     Ok(())
 }
 
-#[post_upgrade]
-fn post_upgrade() {
+#[update(name = "multiple")]
+#[candid_method(update, rename = "multiple")]
+fn multiple(from: u64, to: u64) {
     STATE.with(|s| {
-        s.replace(StableBTreeMap::load(StableStorage::new()));
+        let mut state = s.borrow_mut();
+        for i in from..=to {
+            state
+                .insert(
+                    i.to_be_bytes().to_vec(),
+                    (u64::MAX - i).to_be_bytes().to_vec(),
+                )
+                .unwrap_or_else(|err| trap(&format!("insert multiple error: {}", err)));
+        }
     });
+}
+
+#[query(name = "read_raw_memory")]
+#[candid_method(query, rename = "read_raw_memory")]
+fn read_raw_memory(position: u64, size: u64) -> Vec<u8> {
+    let mut buf = [0].repeat(size as usize);
+    stable::stable64_read(position, &mut buf);
+    return buf;
+}
+
+#[query(name = "stablesize")]
+#[candid_method(query, rename = "stablesize")]
+fn stable_size_t() -> u64 {
+    stable::stable64_size()
+}
+
+#[update(name = "wallet_receive")]
+#[candid_method(update, rename = "wallet_receive")]
+fn wallet_receive() {
+    let cycles = ic_cdk::api::call::msg_cycles_available128();
+    ic_cdk::api::call::msg_cycles_accept128(cycles);
 }
 
 #[cfg(any(target_arch = "wasm32", test))]
