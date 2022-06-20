@@ -9,6 +9,5 @@ edition = "2018"
 candid = "0.7"
 ic-cdk = "0.5"
 ic-cdk-macros = "0.5"
-# stable-structures = { git = "https://github.com/aewc/ic" }
-stable-structures = { path = "/Users/flyq/workspace/github-aewc/ic/rs/stable-structures" }
 serde = "1.0"
+stable-structures = { git = "https://github.com/aewc/ic" }
