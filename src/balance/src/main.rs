@@ -1,25 +1,53 @@
 use candid::{candid_method, Principal};
-use ic_cdk::{api::stable, api::trap, caller};
+use ic_cdk::{
+    api::stable,
+    api::time,
+    api::trap,
+    caller,
+    export::candid::{CandidType, Decode, Deserialize, Encode},
+};
 use ic_cdk_macros::*;
-use stable_structures::{stable_storage::StableStorage, StableBTreeMap};
+use stable_structures::{stable_storage::StableStorage, RestrictedMemory, StableBTreeMap};
 use std::cell::RefCell;
 use std::convert::TryInto;
 
+#[derive(CandidType, Deserialize)]
+struct History {
+    id: u64,
+    from: Principal,
+    to: Principal,
+    value: u64,
+    timestamp: u64,
+}
+
+// 0 - 8192 page is for user balance. 0-512MB
+// 8192 - 16384 page for history.   512-1GB
+// other 7GB for other storage
 thread_local! {
-    static STATE: RefCell<StableBTreeMap<StableStorage>> = RefCell::new(StableBTreeMap::load(StableStorage::default()));
+    static BLAN: RefCell<StableBTreeMap<RestrictedMemory<StableStorage>>> = RefCell::new(StableBTreeMap::load(RestrictedMemory::new(StableStorage::default(), 0..8192)));
+    static HIST: RefCell<StableBTreeMap<RestrictedMemory<StableStorage>>> = RefCell::new(StableBTreeMap::load(RestrictedMemory::new(StableStorage::default(), 8192..16384)));
 }
 
 #[init]
 #[candid_method(init)]
 fn init() {
-    StableBTreeMap::new(StableStorage::default(), 29, 8);
+    StableBTreeMap::new(
+        RestrictedMemory::new(StableStorage::default(), 0..8192),
+        29,
+        8,
+    );
+    StableBTreeMap::new(
+        RestrictedMemory::new(StableStorage::default(), 8192..16384),
+        8,
+        150,
+    );
 }
 
 #[candid_method(query, rename = "balance_of")]
 #[query(name = "balance_of")]
-fn balance_of(owner1: Principal) -> u64 {
-    let owner = owner1.as_slice().to_vec();
-    STATE.with(|s| {
+fn balance_of(owner: Principal) -> u64 {
+    let owner = owner.as_slice().to_vec();
+    BLAN.with(|s| {
         let state = s.borrow();
         let result = state.get(&owner);
         match result {
@@ -32,18 +60,40 @@ fn balance_of(owner1: Principal) -> u64 {
     })
 }
 
+#[candid_method(query, rename = "get_history")]
+#[query(name = "get_history")]
+fn get_history(from: u64, amount: u64) -> Vec<History> {
+    let mut result = vec![];
+    HIST.with(|s| {
+        let state = s.borrow();
+        for i in from..from + amount {
+            let value = state.get(&i.to_be_bytes().to_vec());
+            if value.is_none() {
+                break;
+            }
+            let value = value.unwrap_or_else(|| trap(&format!("get history error")));
+            result.push(
+                Decode!(&value, History)
+                    .unwrap_or_else(|e| trap(&format!("decode history error: {:?}", e))),
+            );
+        }
+        result
+    })
+}
+
 #[candid_method(update, rename = "transfer")]
 #[update(name = transfer)]
 fn transfer(to: Principal, amount: u64) -> Result<(), String> {
     let caller = caller();
     let caller_slice = caller.as_slice().to_vec();
     let to_slice = to.as_slice().to_vec();
+    let now = time();
 
     let caller_balance = balance_of(caller);
     let caller_balance_new = caller_balance
         .checked_sub(amount)
         .unwrap_or_else(|| trap(&format!("caller balance sub error.")));
-    STATE.with(|s| {
+    BLAN.with(|s| {
         let mut state = s.borrow_mut();
         state
             .insert(caller_slice, caller_balance_new.to_be_bytes().to_vec())
@@ -54,10 +104,26 @@ fn transfer(to: Principal, amount: u64) -> Result<(), String> {
     let to_balance_new = to_balance
         .checked_add(amount)
         .unwrap_or_else(|| trap(&format!("to balance add error.")));
-    STATE.with(|s| {
+    BLAN.with(|s| {
         let mut state = s.borrow_mut();
         state
             .insert(to_slice, to_balance_new.to_be_bytes().to_vec())
+            .unwrap_or_else(|err| trap(&format!("insert to error: {}", err)));
+    });
+
+    HIST.with(|h| {
+        let mut history = h.borrow_mut();
+        let id = history.len();
+        let h = History {
+            id,
+            from: caller,
+            to,
+            value: amount,
+            timestamp: now,
+        };
+        let h_bytes = Encode!(&h).unwrap_or_else(|e| trap(&format!("encode! error: {}", e)));
+        history
+            .insert(id.to_be_bytes().to_vec(), h_bytes)
             .unwrap_or_else(|err| trap(&format!("insert to error: {}", err)));
     });
     Ok(())
@@ -65,7 +131,7 @@ fn transfer(to: Principal, amount: u64) -> Result<(), String> {
 
 #[candid_method(update, rename = "mint")]
 #[update(name = "mint")]
-fn mint(amount: u64) -> Result<(), String> {
+fn mint1(amount: u64) -> Result<(), String> {
     let caller = caller();
     let caller_slice = caller.as_slice().to_vec();
     let caller_balance = balance_of(caller);
@@ -73,7 +139,7 @@ fn mint(amount: u64) -> Result<(), String> {
         .checked_add(amount)
         .unwrap_or_else(|| trap(&format!("caller balance add error.")));
 
-    STATE.with(|s| {
+    BLAN.with(|s| {
         let mut state = s.borrow_mut();
         state
             .insert(caller_slice, caller_balance_new.to_be_bytes().to_vec())
@@ -86,7 +152,7 @@ fn mint(amount: u64) -> Result<(), String> {
 #[update(name = "multiple")]
 #[candid_method(update, rename = "multiple")]
 fn multiple(from: u64, to: u64) {
-    STATE.with(|s| {
+    BLAN.with(|s| {
         let mut state = s.borrow_mut();
         for i in from..=to {
             state
