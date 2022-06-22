@@ -1,18 +1,13 @@
-type History = record {
-  id : nat64;
-  to : principal;
-  value : nat64;
-  from : principal;
-  timestamp : nat64;
-};
-type Result = variant { Ok; Err : text };
 service : () -> {
-  balance_of : (principal) -> (nat64) query;
-  get_history : (nat64, nat64) -> (vec History) query;
-  mint : (nat64) -> (Result);
-  multiple : (nat64, nat64) -> ();
-  read_raw_memory : (nat64, nat64) -> (vec nat8) query;
+  addsize : (nat64) -> (nat64);
+  read_map_stable : (nat64, nat64) -> (nat64) query;
+  read_map_wasm_heap : (nat64, nat64) -> (nat64) query;
+  read_vec_stable : (nat64, nat64) -> (nat64) query;
+  read_vec_wasm_heap : (nat64, nat64) -> (nat64) query;
   stablesize : () -> (nat64) query;
-  transfer : (principal, nat64) -> (Result);
   wallet_receive : () -> ();
+  write_map_stable : (nat64, nat64) -> ();
+  write_map_wasm_heap : (nat64, nat64) -> ();
+  write_vec_stable : (nat64, nat64) -> ();
+  write_vec_wasm_heap : (nat64, nat64) -> ();
 }

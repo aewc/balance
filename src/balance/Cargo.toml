@@ -11,3 +11,13 @@ ic-cdk = "0.5"
 ic-cdk-macros = "0.5"
 serde = "1.0"
 stable-structures = { git = "https://github.com/aewc/ic" }
+
+[dev-dependencies]
+criterion = { version = "0.3.5", default-features = false, features=["cargo_bench_support", "html_reports"] }
+ic-agent = "0.17"
+tokio = "1"
+garcon = "0.2"
+
+[[bench]]
+name = "my_benchmark"
+harness = false
