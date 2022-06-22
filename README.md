@@ -73,9 +73,9 @@ Found 3 outliers among 10 measurements (30.00%)
   1 (10.00%) high mild
   1 (10.00%) high severe
 
-Benchmarking write_vec_wasm_heap 100_000_000-2_000_000_000: Warming up for 3.0000 s
+Benchmarking write_vec_wasm_heap 100_000_000-200_000_000: Warming up for 3.0000 s
 Warning: Unable to complete 10 samples in 5.0s. You may wish to increase target time to 46.1s.
-write_vec_wasm_heap 100_000_000-2_000_000_000
+write_vec_wasm_heap 100_000_000-200_000_000
                         time:   [2.6730 s 2.8261 s 2.9782 s]
 
 Benchmarking read_map_stable 0-100_000: Warming up for 3.0000 s
@@ -139,3 +139,16 @@ read_vec_wasm_heap 100_000_000-200_000_000
                         time:   [1.8087 s 1.8179 s 1.8289 s]
 
 ```
+
+analysis:
+write 100_000 entries to stable memory:   5.3927s
+write 100_000 entries to wasm heap:       3.2827s
+
+write 100 MB vector to stable memory:     2.9031s
+write 100 MB vector to wasm heap:         3.0960s
+
+read 100_000 entries from stable memory:  3.6159s
+read 100_000 entries from wasm heap:      1.8864s
+
+read 100 MB vector from stable memory:    1.4479s
+read 100 MB vector from wasm heap:        1.8138s

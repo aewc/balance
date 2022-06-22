@@ -341,7 +341,7 @@ fn criterion_benchmark(c1: &mut Criterion) {
             rt.block_on(write_vec_wasm_heap_1());
         })
     });
-    c1.bench_function("write_vec_wasm_heap 100_000_000-2_000_000_000", |b| {
+    c1.bench_function("write_vec_wasm_heap 100_000_000-200_000_000", |b| {
         b.iter(|| {
             let rt = Runtime::new().unwrap();
             rt.block_on(write_vec_wasm_heap_2());
