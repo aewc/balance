@@ -142,15 +142,15 @@ read_vec_wasm_heap 100_000_000-200_000_000
 
 ```
 analysis:
-write 100_000 entries to stable memory:   5.3927s
-write 100_000 entries to wasm heap:       3.2827s
+write 100_000 map entries to stable memory:   5.3927s
+write 100_000 map entries to wasm heap:       3.2827s
 
-write 100 MB vector to stable memory:     2.9031s
-write 100 MB vector to wasm heap:         3.0960s
+write 100 MB vector to stable memory:         2.9031s
+write 100 MB vector to wasm heap:             3.0960s
 
-read 100_000 entries from stable memory:  3.6159s
-read 100_000 entries from wasm heap:      1.8864s
+read 100_000 map entries from stable memory:  3.6159s
+read 100_000 map entries from wasm heap:      1.8864s
 
-read 100 MB vector from stable memory:    1.4479s
-read 100 MB vector from wasm heap:        1.8138s
+read 100 MB vector from stable memory:        1.4479s
+read 100 MB vector from wasm heap:            1.8138s
 ```
