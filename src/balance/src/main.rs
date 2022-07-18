@@ -7,11 +7,19 @@ use ic_cdk::{
     export::candid::{CandidType, Decode, Deserialize, Encode},
 };
 use ic_cdk_macros::*;
-use stable_structures::{stable_storage::StableStorage, RestrictedMemory, StableBTreeMap};
+use ic_helpers::stable::{
+    chunk_manager::VistualMemory,
+    export::stable_structures::{RestrictedMemory, StableBTreeMap},
+    StableMemory,
+};
 use std::cell::RefCell;
 use std::convert::TryInto;
+use std::rc::Rc;
 
-#[derive(CandidType, Deserialize)]
+const BALANCE_INDEX: u8 = 0;
+const HISTORY_INDEX: u8 = 1;
+
+#[derive(CandidType, Deserialize, Clone)]
 struct History {
     id: u64,
     from: Principal,
@@ -20,27 +28,10 @@ struct History {
     timestamp: u64,
 }
 
-// 0 - 8192 page is for user balance. 0-512MB
-// 8192 - 16384 page for history.   512-1GB
-// other 7GB for other storage
 thread_local! {
-    static BLAN: RefCell<StableBTreeMap<RestrictedMemory<StableStorage>>> = RefCell::new(StableBTreeMap::load(RestrictedMemory::new(StableStorage::default(), 0..8192)));
-    static HIST: RefCell<StableBTreeMap<RestrictedMemory<StableStorage>>> = RefCell::new(StableBTreeMap::load(RestrictedMemory::new(StableStorage::default(), 8192..16384)));
-}
-
-#[init]
-#[candid_method(init)]
-fn init() {
-    StableBTreeMap::new(
-        RestrictedMemory::new(StableStorage::default(), 0..8192),
-        29,
-        8,
-    );
-    StableBTreeMap::new(
-        RestrictedMemory::new(StableStorage::default(), 8192..16384),
-        8,
-        150,
-    );
+    // static MANGER: Rc<RefCell<StableBTreeMap<RestrictedMemory<StableMemory>, Vec<u8>, Vec<u8>>>> = Rc::new(RefCell::new(StableBTreeMap::init(RestrictedMemory::new(StableMemory{}, 0..20), 4, 0)));
+    static BLAN: Rc<RefCell<StableBTreeMap<VistualMemory<RestrictedMemory<StableMemory>, RestrictedMemory<StableMemory>>, Vec<u8>, Vec<u8>>>> = Rc::new(RefCell::new(StableBTreeMap::init(VistualMemory::init(RestrictedMemory::new(StableMemory::default(), 20..131072), RestrictedMemory::new(StableMemory::default(), 0..20), BALANCE_INDEX), 29, 8)));
+    static HIST: Rc<RefCell<StableBTreeMap<VistualMemory<RestrictedMemory<StableMemory>, RestrictedMemory<StableMemory>>, Vec<u8>, Vec<u8>>>> = Rc::new(RefCell::new(StableBTreeMap::init(VistualMemory::init(RestrictedMemory::new(StableMemory::default(), 20..131072), RestrictedMemory::new(StableMemory::default(), 0..20), HISTORY_INDEX), 121, 0)));
 }
 
 #[candid_method(query, rename = "balance_of")]
@@ -66,19 +57,17 @@ fn get_history(from: u64, amount: u64) -> Vec<History> {
     let mut result = vec![];
     HIST.with(|s| {
         let state = s.borrow();
-        for i in from..from + amount {
-            let value = state.get(&i.to_be_bytes().to_vec());
-            if value.is_none() {
-                break;
+        for (i, (key, _)) in state.iter().enumerate() {
+            let i = i as u64;
+            if i >= from && i < from + amount {
+                result.push(
+                    Decode!(&key, History)
+                        .unwrap_or_else(|e| trap(&format!("decode history error: {:?}", e))),
+                );
             }
-            let value = value.unwrap_or_else(|| trap(&format!("get history error")));
-            result.push(
-                Decode!(&value, History)
-                    .unwrap_or_else(|e| trap(&format!("decode history error: {:?}", e))),
-            );
         }
-        result
-    })
+    });
+    result
 }
 
 #[candid_method(update, rename = "transfer")]
@@ -123,7 +112,7 @@ fn transfer(to: Principal, amount: u64) -> Result<(), String> {
         };
         let h_bytes = Encode!(&h).unwrap_or_else(|e| trap(&format!("encode! error: {}", e)));
         history
-            .insert(id.to_be_bytes().to_vec(), h_bytes)
+            .insert(h_bytes, vec![])
             .unwrap_or_else(|err| trap(&format!("insert to error: {}", err)));
     });
     Ok(())
@@ -131,7 +120,7 @@ fn transfer(to: Principal, amount: u64) -> Result<(), String> {
 
 #[candid_method(update, rename = "mint")]
 #[update(name = "mint")]
-fn mint1(amount: u64) -> Result<(), String> {
+fn mint(amount: u64) -> Result<(), String> {
     let caller = caller();
     let caller_slice = caller.as_slice().to_vec();
     let caller_balance = balance_of(caller);
@@ -149,22 +138,6 @@ fn mint1(amount: u64) -> Result<(), String> {
     Ok(())
 }
 
-#[update(name = "multiple")]
-#[candid_method(update, rename = "multiple")]
-fn multiple(from: u64, to: u64) {
-    BLAN.with(|s| {
-        let mut state = s.borrow_mut();
-        for i in from..=to {
-            state
-                .insert(
-                    i.to_be_bytes().to_vec(),
-                    (u64::MAX - i).to_be_bytes().to_vec(),
-                )
-                .unwrap_or_else(|err| trap(&format!("insert multiple error: {}", err)));
-        }
-    });
-}
-
 #[query(name = "read_raw_memory")]
 #[candid_method(query, rename = "read_raw_memory")]
 fn read_raw_memory(position: u64, size: u64) -> Vec<u8> {
@@ -175,7 +148,7 @@ fn read_raw_memory(position: u64, size: u64) -> Vec<u8> {
 
 #[query(name = "stablesize")]
 #[candid_method(query, rename = "stablesize")]
-fn stable_size_t() -> u64 {
+fn stable_size() -> u64 {
     stable::stable64_size()
 }
 
