@@ -29,7 +29,6 @@ struct History {
 }
 
 thread_local! {
-    // static MANGER: Rc<RefCell<StableBTreeMap<RestrictedMemory<StableMemory>, Vec<u8>, Vec<u8>>>> = Rc::new(RefCell::new(StableBTreeMap::init(RestrictedMemory::new(StableMemory{}, 0..20), 4, 0)));
     static BLAN: Rc<RefCell<StableBTreeMap<VistualMemory<RestrictedMemory<StableMemory>, RestrictedMemory<StableMemory>>, Vec<u8>, Vec<u8>>>> = Rc::new(RefCell::new(StableBTreeMap::init(VistualMemory::init(RestrictedMemory::new(StableMemory::default(), 20..131072), RestrictedMemory::new(StableMemory::default(), 0..20), BALANCE_INDEX), 29, 8)));
     static HIST: Rc<RefCell<StableBTreeMap<VistualMemory<RestrictedMemory<StableMemory>, RestrictedMemory<StableMemory>>, Vec<u8>, Vec<u8>>>> = Rc::new(RefCell::new(StableBTreeMap::init(VistualMemory::init(RestrictedMemory::new(StableMemory::default(), 20..131072), RestrictedMemory::new(StableMemory::default(), 0..20), HISTORY_INDEX), 121, 0)));
 }
@@ -68,6 +67,58 @@ fn get_history(from: u64, amount: u64) -> Vec<History> {
         }
     });
     result
+}
+
+#[candid_method(query, rename = "get_balance")]
+#[query(name = "get_balance")]
+fn get_balance(from: u64, amount: u64) -> Vec<(u64, u64)> {
+    let mut res = vec![];
+    BLAN.with(|s| {
+        let state = s.borrow();
+        for i in from..from + amount {
+            let result = state.get(&i.to_be_bytes().to_vec());
+
+            let a = match result {
+                Some(v) => u64::from_be_bytes(
+                    v.try_into()
+                        .unwrap_or_else(|err| trap(&format!("from_be_bytes error: {:?}", err))),
+                ),
+                None => break,
+            };
+
+            res.push((i, a));
+        }
+    });
+    res
+}
+
+#[candid_method(update, rename = "multiple")]
+#[update(name = multiple)]
+fn multiple1(start: u64, size: u64) -> Result<(), String> {
+    BLAN.with(|b| {
+        let mut state = b.borrow_mut();
+        for i in start..(start + size) {
+            state
+                .insert(i.to_be_bytes().to_vec(), i.to_be_bytes().to_vec())
+                .unwrap();
+        }
+    });
+    HIST.with(|h| {
+        let mut state = h.borrow_mut();
+        for i in start..start + size {
+            let id = state.len();
+            let h = History {
+                id,
+                from: caller(),
+                to: Principal::anonymous(),
+                value: i,
+                timestamp: time(),
+            };
+            let h_bytes = Encode!(&h).unwrap_or_else(|e| trap(&format!("encode! error: {}", e)));
+            state.insert(h_bytes, vec![]).unwrap();
+        }
+    });
+    Ok(())
 }
 
 #[candid_method(update, rename = "transfer")]
@@ -150,6 +201,18 @@ fn read_raw_memory(position: u64, size: u64) -> Vec<u8> {
 #[candid_method(query, rename = "stablesize")]
 fn stable_size() -> u64 {
     stable::stable64_size()
+}
+
+#[update(name = "grow")]
+#[candid_method(update, rename = "grow")]
+fn grow(pages: u64) -> u64 {
+    stable::stable64_grow(pages).unwrap()
+}
+
+#[update(name = "write")]
+#[candid_method(update, rename = "write")]
+fn write(offset: u64, src: Vec<u8>) {
+    stable::stable64_write(offset, &src)
 }
 
 #[update(name = "wallet_receive")]

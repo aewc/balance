@@ -175,3 +175,16 @@ dfx canister call balance read_raw_memory '(1_376_256, 300)'
 )
 # and it begins with "BTR", that means it is the begin of one btreemap.
 ```
+
+dfx canister call balance stablesize
+
+
+
+dfx canister call balance multiple '(0, 2000)'
+
+dfx canister call balance page_info
+
+dfx canister call balance multiple '(2000, 2000)'
+ 
+
+ 
