@@ -13,6 +13,7 @@ service : {
   grow : (nat64) -> (nat64);
   mint : (nat64) -> (Result);
   multiple : (nat64, nat64) -> (Result);
+  page_info : () -> (nat64, vec nat32, nat64, vec nat32) query;
   read_raw_memory : (nat64, nat64) -> (vec nat8) query;
   stablesize : () -> (nat64) query;
   transfer : (principal, nat64) -> (Result);

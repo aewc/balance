@@ -462,9 +462,9 @@ dependencies = [
 
 [[package]]
 name = "concurrent-queue"
-version = "1.2.3"
+version = "1.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "83827793632c72fa4f73c2edb31e7a997527dd8ffe7077344621fc62c5478157"
+checksum = "30ed07550be01594c6026cff2a1d7fe9c8f683caa798e12b68694ac9e88286a3"
 dependencies = [
  "cache-padded",
 ]
@@ -1059,7 +1059,7 @@ dependencies = [
 [[package]]
 name = "ic-canister"
 version = "0.2.3"
-source = "git+https://github.com/infinity-swap/canister-sdk?branch=CPROD-895#42bf3871bf2ed306a39d4016e5fcc45662880905"
+source = "git+https://github.com/infinity-swap/canister-sdk?branch=CPROD-895#3aebc167dfc223ef6f80aaf1f44902273a6bca1a"
 dependencies = [
  "candid",
  "ic-canister-macros",
@@ -1071,7 +1071,7 @@ dependencies = [
 [[package]]
 name = "ic-canister-macros"
 version = "0.2.2"
-source = "git+https://github.com/infinity-swap/canister-sdk?branch=CPROD-895#42bf3871bf2ed306a39d4016e5fcc45662880905"
+source = "git+https://github.com/infinity-swap/canister-sdk?branch=CPROD-895#3aebc167dfc223ef6f80aaf1f44902273a6bca1a"
 dependencies = [
  "ic-cdk",
  "lazy_static",
@@ -1143,7 +1143,7 @@ dependencies = [
 [[package]]
 name = "ic-helpers"
 version = "0.3.12"
-source = "git+https://github.com/infinity-swap/canister-sdk?branch=CPROD-895#42bf3871bf2ed306a39d4016e5fcc45662880905"
+source = "git+https://github.com/infinity-swap/canister-sdk?branch=CPROD-895#3aebc167dfc223ef6f80aaf1f44902273a6bca1a"
 dependencies = [
  "async-trait",
  "auto_ops",
@@ -1239,7 +1239,7 @@ dependencies = [
 [[package]]
 name = "ic-storage"
 version = "0.2.1"
-source = "git+https://github.com/infinity-swap/canister-sdk?branch=CPROD-895#42bf3871bf2ed306a39d4016e5fcc45662880905"
+source = "git+https://github.com/infinity-swap/canister-sdk?branch=CPROD-895#3aebc167dfc223ef6f80aaf1f44902273a6bca1a"
 dependencies = [
  "candid",
  "ic-cdk",
@@ -1251,7 +1251,7 @@ dependencies = [
 [[package]]
 name = "ic-storage-derive"
 version = "0.1.0"
-source = "git+https://github.com/infinity-swap/canister-sdk?branch=CPROD-895#42bf3871bf2ed306a39d4016e5fcc45662880905"
+source = "git+https://github.com/infinity-swap/canister-sdk?branch=CPROD-895#3aebc167dfc223ef6f80aaf1f44902273a6bca1a"
 dependencies = [
  "quote",
  "syn",
@@ -2172,7 +2172,7 @@ dependencies = [
 [[package]]
 name = "stable-structures"
 version = "0.1.0"
-source = "git+https://github.com/dfinity/ic#52a1bd7d4bffcc164ca0f484ff125090770d3ba7"
+source = "git+https://github.com/dfinity/ic#d1f1bbefafa90fd444a9088e377bf68c78ee0f3f"
 
 [[package]]
 name = "string_cache"

@@ -2,6 +2,8 @@
 ```sh
 cargo run > src/balance/balance.did 
 
+dfx start --clean
+
 dfx build 
 
 dfx canister install balance -m=reinstall
@@ -176,15 +178,41 @@ dfx canister call balance read_raw_memory '(1_376_256, 300)'
 # and it begins with "BTR", that means it is the begin of one btreemap.
 ```
 
+Test multiple pages:
+```sh
+dfx build 
+
+dfx canister install balance -m=reinstall
+
 dfx canister call balance stablesize
-
-
+(0 : nat64)
 
 dfx canister call balance multiple '(0, 2000)'
+(variant { Ok })
+
+dfx canister call balance stablesize
+(31 : nat64)
 
 dfx canister call balance page_info
+(
+  4 : nat64,
+  vec { 0 : nat32; 1 : nat32; 2 : nat32; 3 : nat32 },
+  7 : nat64,
+  vec {
+    4 : nat32;
+    5 : nat32;
+    6 : nat32;
+    7 : nat32;
+    8 : nat32;
+    9 : nat32;
+    10 : nat32;
+  },
+)
 
-dfx canister call balance multiple '(2000, 2000)'
- 
+dfx canister call balance multiple '(2000, 1000)'
+(variant { Ok })
 
- 
+
+dfx canister call balance get_history '(0, 3100)'
+...
+```

@@ -8,7 +8,7 @@ use ic_cdk::{
 };
 use ic_cdk_macros::*;
 use ic_helpers::stable::{
-    chunk_manager::VistualMemory,
+    chunk_manager::VirtualMemory,
     export::stable_structures::{RestrictedMemory, StableBTreeMap},
     StableMemory,
 };
@@ -29,8 +29,8 @@ struct History {
 }
 
 thread_local! {
-    static BLAN: Rc<RefCell<StableBTreeMap<VistualMemory<RestrictedMemory<StableMemory>, RestrictedMemory<StableMemory>>, Vec<u8>, Vec<u8>>>> = Rc::new(RefCell::new(StableBTreeMap::init(VistualMemory::init(RestrictedMemory::new(StableMemory::default(), 20..131072), RestrictedMemory::new(StableMemory::default(), 0..20), BALANCE_INDEX), 29, 8)));
-    static HIST: Rc<RefCell<StableBTreeMap<VistualMemory<RestrictedMemory<StableMemory>, RestrictedMemory<StableMemory>>, Vec<u8>, Vec<u8>>>> = Rc::new(RefCell::new(StableBTreeMap::init(VistualMemory::init(RestrictedMemory::new(StableMemory::default(), 20..131072), RestrictedMemory::new(StableMemory::default(), 0..20), HISTORY_INDEX), 121, 0)));
+    static BLAN: Rc<RefCell<StableBTreeMap<VirtualMemory<RestrictedMemory<StableMemory>, RestrictedMemory<StableMemory>>, Vec<u8>, Vec<u8>>>> = Rc::new(RefCell::new(StableBTreeMap::init(VirtualMemory::init(RestrictedMemory::new(StableMemory::default(), 20..131072), RestrictedMemory::new(StableMemory::default(), 0..20), BALANCE_INDEX), 29, 8)));
+    static HIST: Rc<RefCell<StableBTreeMap<VirtualMemory<RestrictedMemory<StableMemory>, RestrictedMemory<StableMemory>>, Vec<u8>, Vec<u8>>>> = Rc::new(RefCell::new(StableBTreeMap::init(VirtualMemory::init(RestrictedMemory::new(StableMemory::default(), 20..131072), RestrictedMemory::new(StableMemory::default(), 0..20), HISTORY_INDEX), 121, 0)));
 }
 
 #[candid_method(query, rename = "balance_of")]
@@ -195,6 +195,28 @@ fn read_raw_memory(position: u64, size: u64) -> Vec<u8> {
     let mut buf = [0].repeat(size as usize);
     stable::stable64_read(position, &mut buf);
     return buf;
+}
+
+#[query(name = "page_info")]
+#[candid_method(query, rename = "page_info")]
+fn page_info1() -> (usize, Vec<u32>, usize, Vec<u32>) {
+    let manager = StableBTreeMap::load(RestrictedMemory::new(StableMemory::default(), 0..20));
+    let a = manager
+        .range(vec![BALANCE_INDEX], None)
+        .map(|a: (Vec<u8>, Vec<u8>)| decode(BALANCE_INDEX, a.0.try_into().expect("decode error")))
+        .collect::<Vec<_>>();
+    let b = manager
+        .range(vec![HISTORY_INDEX], None)
+        .map(|a| decode(HISTORY_INDEX, a.0.try_into().expect("decode error")))
+        .collect::<Vec<_>>();
+    (a.len(), a, b.len(), b)
+}
+
+fn decode(index: u8, bytes: [u8; 4]) -> u32 {
+    assert!(bytes[0] == index);
+    let mut bytes = bytes;
+    bytes[0] = 0;
+    u32::from_be_bytes(bytes)
 }
 
 #[query(name = "stablesize")]
