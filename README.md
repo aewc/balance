@@ -12,7 +12,6 @@ dfx canister call balance stablesize
 (0 : nat64)
 
 dfx canister status balance
-
 Canister status call result for balance.
 Status: Running
 Controllers: yhy6j-huy54-mkzda-m26hc-yklb3-dzz4l-i2ykq-kr7tx-dhxyf-v2c2g-tae
@@ -92,9 +91,7 @@ test upgrade:
 ```sh
 # modify the src code to change the module hash to upgrade
 
-dfx build --network ic
-
-dfx canister install balance -m=upgrade
+dfx deploy --no-wallet
 
 dfx canister call balance balance_of '(principal "aaaaa-aa")'
 (1_000 : nat64)
@@ -180,13 +177,6 @@ dfx canister call balance read_raw_memory '(1_376_256, 300)'
 
 Test multiple pages:
 ```sh
-dfx build 
-
-dfx canister install balance -m=reinstall
-
-dfx canister call balance stablesize
-(0 : nat64)
-
 dfx canister call balance multiple '(0, 2000)'
 (variant { Ok })
 
@@ -196,10 +186,10 @@ dfx canister call balance stablesize
 dfx canister call balance page_info
 (
   4 : nat64,
-  vec { 0 : nat32; 1 : nat32; 2 : nat32; 3 : nat32 },
+  vec { 0 : nat32; 2 : nat32; 3 : nat32; 4 : nat32 },
   7 : nat64,
   vec {
-    4 : nat32;
+    1 : nat32;
     5 : nat32;
     6 : nat32;
     7 : nat32;
@@ -212,6 +202,24 @@ dfx canister call balance page_info
 dfx canister call balance multiple '(2000, 1000)'
 (variant { Ok })
 
+dfx canister call balance page_info
+(
+  6 : nat64,
+  vec { 0 : nat32; 2 : nat32; 3 : nat32; 4 : nat32; 11 : nat32; 12 : nat32 },
+  10 : nat64,
+  vec {
+    1 : nat32;
+    5 : nat32;
+    6 : nat32;
+    7 : nat32;
+    8 : nat32;
+    9 : nat32;
+    10 : nat32;
+    13 : nat32;
+    14 : nat32;
+    15 : nat32;
+  },
+)
 
 dfx canister call balance get_history '(0, 3100)'
 ...

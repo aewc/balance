@@ -1059,7 +1059,7 @@ dependencies = [
 [[package]]
 name = "ic-canister"
 version = "0.2.3"
-source = "git+https://github.com/infinity-swap/canister-sdk?branch=CPROD-895#3aebc167dfc223ef6f80aaf1f44902273a6bca1a"
+source = "git+https://github.com/infinity-swap/canister-sdk?branch=CPROD-895#6c14a865147685983e1820b5daa863ec37e3b454"
 dependencies = [
  "candid",
  "ic-canister-macros",
@@ -1071,7 +1071,7 @@ dependencies = [
 [[package]]
 name = "ic-canister-macros"
 version = "0.2.2"
-source = "git+https://github.com/infinity-swap/canister-sdk?branch=CPROD-895#3aebc167dfc223ef6f80aaf1f44902273a6bca1a"
+source = "git+https://github.com/infinity-swap/canister-sdk?branch=CPROD-895#6c14a865147685983e1820b5daa863ec37e3b454"
 dependencies = [
  "ic-cdk",
  "lazy_static",
@@ -1143,7 +1143,7 @@ dependencies = [
 [[package]]
 name = "ic-helpers"
 version = "0.3.12"
-source = "git+https://github.com/infinity-swap/canister-sdk?branch=CPROD-895#3aebc167dfc223ef6f80aaf1f44902273a6bca1a"
+source = "git+https://github.com/infinity-swap/canister-sdk?branch=CPROD-895#6c14a865147685983e1820b5daa863ec37e3b454"
 dependencies = [
  "async-trait",
  "auto_ops",
@@ -1239,7 +1239,7 @@ dependencies = [
 [[package]]
 name = "ic-storage"
 version = "0.2.1"
-source = "git+https://github.com/infinity-swap/canister-sdk?branch=CPROD-895#3aebc167dfc223ef6f80aaf1f44902273a6bca1a"
+source = "git+https://github.com/infinity-swap/canister-sdk?branch=CPROD-895#6c14a865147685983e1820b5daa863ec37e3b454"
 dependencies = [
  "candid",
  "ic-cdk",
@@ -1251,7 +1251,7 @@ dependencies = [
 [[package]]
 name = "ic-storage-derive"
 version = "0.1.0"
-source = "git+https://github.com/infinity-swap/canister-sdk?branch=CPROD-895#3aebc167dfc223ef6f80aaf1f44902273a6bca1a"
+source = "git+https://github.com/infinity-swap/canister-sdk?branch=CPROD-895#6c14a865147685983e1820b5daa863ec37e3b454"
 dependencies = [
  "quote",
  "syn",
@@ -2027,9 +2027,9 @@ dependencies = [
 
 [[package]]
 name = "serde"
-version = "1.0.139"
+version = "1.0.140"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0171ebb889e45aa68b44aee0859b3eede84c6f5f5c228e6f140c0b2a0a46cad6"
+checksum = "fc855a42c7967b7c369eb5860f7164ef1f6f81c20c7cc1141f2a604e18723b03"
 dependencies = [
  "serde_derive",
 ]
@@ -2055,9 +2055,9 @@ dependencies = [
 
 [[package]]
 name = "serde_derive"
-version = "1.0.139"
+version = "1.0.140"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc1d3230c1de7932af58ad8ffbe1d784bd55efd5a9d84ac24f69c72d83543dfb"
+checksum = "6f2122636b9fe3b81f1cb25099fcf2d3f542cdb1d45940d56c713158884a05da"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2172,7 +2172,7 @@ dependencies = [
 [[package]]
 name = "stable-structures"
 version = "0.1.0"
-source = "git+https://github.com/dfinity/ic#d1f1bbefafa90fd444a9088e377bf68c78ee0f3f"
+source = "git+https://github.com/dfinity/ic#8d002c3cbdd2162df4d4232ade18eddede06a9d9"
 
 [[package]]
 name = "string_cache"
@@ -2512,6 +2512,6 @@ checksum = "c811ca4a8c853ef420abd8592ba53ddbbac90410fab6903b3e79972a631f7680"
 
 [[package]]
 name = "zeroize"
-version = "1.5.6"
+version = "1.5.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "20b578acffd8516a6c3f2a1bdefc1ec37e547bb4e0fb8b6b01a4cafc886b4442"
+checksum = "c394b5bd0c6f669e7275d9c20aa90ae064cb22e75a1cad54e1b34088034b149f"
