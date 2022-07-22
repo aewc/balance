@@ -215,7 +215,7 @@ fn read_raw_memory(position: u64, size: u64) -> Vec<u8> {
 #[query(name = "page_info")]
 #[candid_method(query, rename = "page_info")]
 fn page_info() -> (usize, Vec<u32>, usize, Vec<u32>) {
-    let manager = StableBTreeMap::load(RestrictedMemory::new(StableMemory::default(), 0..20));
+    let manager = StableBTreeMap::load(RestrictedMemory::new(StableMemory::default(), 0..101));
     let a = manager
         .range(vec![BALANCE_INDEX], None)
         .map(|a: (Vec<u8>, Vec<u8>)| {
