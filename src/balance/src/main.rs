@@ -9,7 +9,7 @@ use ic_cdk::{
 use ic_cdk_macros::*;
 use ic_helpers::stable::{
     chunk_manager::VirtualMemory,
-    export::stable_structures::{RestrictedMemory, StableBTreeMap},
+    export::stable_structures::{log::Log, RestrictedMemory, StableBTreeMap},
     StableMemory,
 };
 use std::cell::RefCell;
@@ -29,8 +29,8 @@ struct History {
 }
 
 thread_local! {
-    static BLAN: Rc<RefCell<StableBTreeMap<VirtualMemory<RestrictedMemory<StableMemory>, RestrictedMemory<StableMemory>>, Vec<u8>, Vec<u8>>>> = Rc::new(RefCell::new(StableBTreeMap::init(VirtualMemory::init(RestrictedMemory::new(StableMemory::default(), 20..131072), RestrictedMemory::new(StableMemory::default(), 0..20), BALANCE_INDEX), 29, 8)));
-    static HIST: Rc<RefCell<StableBTreeMap<VirtualMemory<RestrictedMemory<StableMemory>, RestrictedMemory<StableMemory>>, Vec<u8>, Vec<u8>>>> = Rc::new(RefCell::new(StableBTreeMap::init(VirtualMemory::init(RestrictedMemory::new(StableMemory::default(), 20..131072), RestrictedMemory::new(StableMemory::default(), 0..20), HISTORY_INDEX), 121, 0)));
+    static BLAN: Rc<RefCell<StableBTreeMap<VirtualMemory<RestrictedMemory<StableMemory>, RestrictedMemory<StableMemory>>, Vec<u8>, Vec<u8>>>> = Rc::new(RefCell::new(StableBTreeMap::init(VirtualMemory::init(RestrictedMemory::new(StableMemory::default(), 101..131072), RestrictedMemory::new(StableMemory::default(), 0..101), BALANCE_INDEX), 29, 8)));
+    static HIST: Rc<RefCell<Log<VirtualMemory<RestrictedMemory<StableMemory>, RestrictedMemory<StableMemory>>>>> = Rc::new(RefCell::new(Log::init(VirtualMemory::init(RestrictedMemory::new(StableMemory::default(), 101..131072), RestrictedMemory::new(StableMemory::default(), 0..101), HISTORY_INDEX), 1_000_000).expect("init faile")));
 }
 
 #[candid_method(query, rename = "balance_of")]
@@ -41,10 +41,9 @@ fn balance_of(owner: Principal) -> u64 {
         let state = s.borrow();
         let result = state.get(&owner);
         match result {
-            Some(v) => u64::from_be_bytes(
-                v.try_into()
-                    .unwrap_or_else(|err| trap(&format!("from_be_bytes error: {:?}", err))),
-            ),
+            Some(v) => u64::from_be_bytes(v.try_into().unwrap_or_else(|err| {
+                trap(&format!("from_be_bytes error in [balance_of]: {:?}", err))
+            })),
             None => 0,
         }
     })
@@ -56,14 +55,20 @@ fn get_history(from: u64, amount: u64) -> Vec<History> {
     let mut result = vec![];
     HIST.with(|s| {
         let state = s.borrow();
-        for (i, (key, _)) in state.iter().enumerate() {
-            let i = i as u64;
-            if i >= from && i < from + amount {
-                result.push(
-                    Decode!(&key, History)
-                        .unwrap_or_else(|e| trap(&format!("decode history error: {:?}", e))),
-                );
-            }
+        let len = state.len() as u64;
+        if from >= len {
+            return;
+        };
+        let end = (from + amount).min(len);
+        for i in from..end {
+            let mut buf = vec![];
+            state
+                .read_entry(i as usize, &mut buf)
+                .unwrap_or_else(|e| trap(&format!("read_entry  error in [get_history]: {:?}", e)));
+
+            result.push(Decode!(&buf, History).unwrap_or_else(|e| {
+                trap(&format!("decode history error in [get_history]: {:?}", e))
+            }))
         }
     });
     result
@@ -79,10 +84,9 @@ fn get_balance(from: u64, amount: u64) -> Vec<(u64, u64)> {
             let result = state.get(&i.to_be_bytes().to_vec());
 
             let a = match result {
-                Some(v) => u64::from_be_bytes(
-                    v.try_into()
-                        .unwrap_or_else(|err| trap(&format!("from_be_bytes error: {:?}", err))),
-                ),
+                Some(v) => u64::from_be_bytes(v.try_into().unwrap_or_else(|err| {
+                    trap(&format!("from_be_bytes error in [get_balance]: {:?}", err))
+                })),
                 None => break,
             };
 
@@ -100,13 +104,15 @@ fn multiple1(start: u64, size: u64) -> Result<(), String> {
         for i in start..(start + size) {
             state
                 .insert(i.to_be_bytes().to_vec(), i.to_be_bytes().to_vec())
-                .unwrap();
+                .unwrap_or_else(|err| {
+                    trap(&format!("insert balance error in [multiple]: {:?}", err))
+                });
         }
     });
     HIST.with(|h| {
-        let mut state = h.borrow_mut();
+        let state = h.borrow_mut();
         for i in start..start + size {
-            let id = state.len();
+            let id = state.len() as u64;
             let h = History {
                 id,
                 from: caller(),
@@ -114,8 +120,11 @@ fn multiple1(start: u64, size: u64) -> Result<(), String> {
                 value: i,
                 timestamp: time(),
             };
-            let h_bytes = Encode!(&h).unwrap_or_else(|e| trap(&format!("encode! error: {}", e)));
-            state.insert(h_bytes, vec![]).unwrap();
+            let h_bytes = Encode!(&h)
+                .unwrap_or_else(|e| trap(&format!("encode history error in [multiple]: {}", e)));
+            state
+                .append(&h_bytes)
+                .expect("append history to Log failed");
         }
     });
     Ok(())
@@ -132,28 +141,33 @@ fn transfer(to: Principal, amount: u64) -> Result<(), String> {
     let caller_balance = balance_of(caller);
     let caller_balance_new = caller_balance
         .checked_sub(amount)
-        .unwrap_or_else(|| trap(&format!("caller balance sub error.")));
+        .unwrap_or_else(|| trap(&format!("caller balance sub error in [transfer].")));
     BLAN.with(|s| {
         let mut state = s.borrow_mut();
         state
             .insert(caller_slice, caller_balance_new.to_be_bytes().to_vec())
-            .unwrap_or_else(|err| trap(&format!("insert caller error: {}", err)))
+            .unwrap_or_else(|err| {
+                trap(&format!(
+                    "insert caller balance error in [transfer]: {}",
+                    err
+                ))
+            })
     });
 
     let to_balance = balance_of(to);
     let to_balance_new = to_balance
         .checked_add(amount)
-        .unwrap_or_else(|| trap(&format!("to balance add error.")));
+        .unwrap_or_else(|| trap(&format!("to balance add error in [transfer].")));
     BLAN.with(|s| {
         let mut state = s.borrow_mut();
         state
             .insert(to_slice, to_balance_new.to_be_bytes().to_vec())
-            .unwrap_or_else(|err| trap(&format!("insert to error: {}", err)));
+            .unwrap_or_else(|err| trap(&format!("insert to balance error in [transfer]: {}", err)));
     });
 
     HIST.with(|h| {
-        let mut history = h.borrow_mut();
-        let id = history.len();
+        let history = h.borrow_mut();
+        let id = history.len() as u64;
         let h = History {
             id,
             from: caller,
@@ -161,10 +175,11 @@ fn transfer(to: Principal, amount: u64) -> Result<(), String> {
             value: amount,
             timestamp: now,
         };
-        let h_bytes = Encode!(&h).unwrap_or_else(|e| trap(&format!("encode! error: {}", e)));
+        let h_bytes = Encode!(&h)
+            .unwrap_or_else(|e| trap(&format!("encode history error in [transfer]: {}", e)));
         history
-            .insert(h_bytes, vec![])
-            .unwrap_or_else(|err| trap(&format!("insert to error: {}", err)));
+            .append(&h_bytes)
+            .unwrap_or_else(|err| trap(&format!("append history error in [transfer]: {:?}", err)));
     });
     Ok(())
 }
@@ -183,7 +198,7 @@ fn mint(amount: u64) -> Result<(), String> {
         let mut state = s.borrow_mut();
         state
             .insert(caller_slice, caller_balance_new.to_be_bytes().to_vec())
-            .unwrap_or_else(|err| trap(&format!("insert caller balance error: {}", err)));
+            .unwrap_or_else(|err| trap(&format!("insert caller balance error in [mint]: {}", err)));
     });
 
     Ok(())
@@ -199,15 +214,35 @@ fn read_raw_memory(position: u64, size: u64) -> Vec<u8> {
 
 #[query(name = "page_info")]
 #[candid_method(query, rename = "page_info")]
-fn page_info1() -> (usize, Vec<u32>, usize, Vec<u32>) {
+fn page_info() -> (usize, Vec<u32>, usize, Vec<u32>) {
     let manager = StableBTreeMap::load(RestrictedMemory::new(StableMemory::default(), 0..20));
     let a = manager
         .range(vec![BALANCE_INDEX], None)
-        .map(|a: (Vec<u8>, Vec<u8>)| decode(BALANCE_INDEX, a.0.try_into().expect("decode error")))
+        .map(|a: (Vec<u8>, Vec<u8>)| {
+            decode(
+                BALANCE_INDEX,
+                a.0.try_into().unwrap_or_else(|err| {
+                    trap(&format!(
+                        "vec<u8> to [u8; 4] error in [page_info]: {:?}",
+                        err
+                    ))
+                }),
+            )
+        })
         .collect::<Vec<_>>();
     let b = manager
         .range(vec![HISTORY_INDEX], None)
-        .map(|a| decode(HISTORY_INDEX, a.0.try_into().expect("decode error")))
+        .map(|a| {
+            decode(
+                HISTORY_INDEX,
+                a.0.try_into().unwrap_or_else(|err| {
+                    trap(&format!(
+                        "vec<u8> to [u8; 4] error in [page_info]: {:?}",
+                        err
+                    ))
+                }),
+            )
+        })
         .collect::<Vec<_>>();
     (a.len(), a, b.len(), b)
 }
@@ -223,18 +258,6 @@ fn decode(index: u8, bytes: [u8; 4]) -> u32 {
 #[candid_method(query, rename = "stablesize")]
 fn stable_size() -> u64 {
     stable::stable64_size()
-}
-
-#[update(name = "grow")]
-#[candid_method(update, rename = "grow")]
-fn grow(pages: u64) -> u64 {
-    stable::stable64_grow(pages).unwrap()
-}
-
-#[update(name = "write")]
-#[candid_method(update, rename = "write")]
-fn write(offset: u64, src: Vec<u8>) {
-    stable::stable64_write(offset, &src)
 }
 
 #[update(name = "wallet_receive")]

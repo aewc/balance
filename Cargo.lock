@@ -1059,7 +1059,7 @@ dependencies = [
 [[package]]
 name = "ic-canister"
 version = "0.2.3"
-source = "git+https://github.com/infinity-swap/canister-sdk?branch=CPROD-895#6c14a865147685983e1820b5daa863ec37e3b454"
+source = "git+https://github.com/infinity-swap/canister-sdk?branch=CPROD-895#efad3c86e538551cf53f792d28ca81a32cc70c66"
 dependencies = [
  "candid",
  "ic-canister-macros",
@@ -1071,7 +1071,7 @@ dependencies = [
 [[package]]
 name = "ic-canister-macros"
 version = "0.2.2"
-source = "git+https://github.com/infinity-swap/canister-sdk?branch=CPROD-895#6c14a865147685983e1820b5daa863ec37e3b454"
+source = "git+https://github.com/infinity-swap/canister-sdk?branch=CPROD-895#efad3c86e538551cf53f792d28ca81a32cc70c66"
 dependencies = [
  "ic-cdk",
  "lazy_static",
@@ -1143,7 +1143,7 @@ dependencies = [
 [[package]]
 name = "ic-helpers"
 version = "0.3.12"
-source = "git+https://github.com/infinity-swap/canister-sdk?branch=CPROD-895#6c14a865147685983e1820b5daa863ec37e3b454"
+source = "git+https://github.com/infinity-swap/canister-sdk?branch=CPROD-895#efad3c86e538551cf53f792d28ca81a32cc70c66"
 dependencies = [
  "async-trait",
  "auto_ops",
@@ -1239,7 +1239,7 @@ dependencies = [
 [[package]]
 name = "ic-storage"
 version = "0.2.1"
-source = "git+https://github.com/infinity-swap/canister-sdk?branch=CPROD-895#6c14a865147685983e1820b5daa863ec37e3b454"
+source = "git+https://github.com/infinity-swap/canister-sdk?branch=CPROD-895#efad3c86e538551cf53f792d28ca81a32cc70c66"
 dependencies = [
  "candid",
  "ic-cdk",
@@ -1251,7 +1251,7 @@ dependencies = [
 [[package]]
 name = "ic-storage-derive"
 version = "0.1.0"
-source = "git+https://github.com/infinity-swap/canister-sdk?branch=CPROD-895#6c14a865147685983e1820b5daa863ec37e3b454"
+source = "git+https://github.com/infinity-swap/canister-sdk?branch=CPROD-895#efad3c86e538551cf53f792d28ca81a32cc70c66"
 dependencies = [
  "quote",
  "syn",
