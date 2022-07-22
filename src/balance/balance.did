@@ -1,18 +1,5 @@
-type History = record {
-  id : nat64;
-  to : principal;
-  value : nat64;
-  from : principal;
-  timestamp : nat64;
-};
-type Result = variant { Ok; Err : text };
-service : () -> {
-  balance_of : (principal) -> (nat64) query;
-  get_history : (nat64, nat64) -> (vec History) query;
-  mint : (nat64) -> (Result);
-  multiple : (nat64, nat64) -> ();
+service : {
+  multiple : (nat32, nat32) -> ();
   read_raw_memory : (nat64, nat64) -> (vec nat8) query;
   stablesize : () -> (nat64) query;
-  transfer : (principal, nat64) -> (Result);
-  wallet_receive : () -> ();
 }
