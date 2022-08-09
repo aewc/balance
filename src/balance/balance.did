@@ -1,5 +1,5 @@
 service : {
-  multiple : (nat32, nat32) -> ();
+  multiple : (nat64, nat64) -> ();
   read_raw_memory : (nat64, nat64) -> (vec nat8) query;
   stablesize : () -> (nat64) query;
 }

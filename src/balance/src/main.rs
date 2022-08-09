@@ -6,12 +6,12 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 thread_local! {
-    static INDEX: Rc<RefCell<StableBTreeMap<StableMemory, Vec<u8>, Vec<u8>>>> = Rc::new(RefCell::new(StableBTreeMap::init(StableMemory::default(), 4, 0)));
+    static INDEX: Rc<RefCell<StableBTreeMap<StableMemory, Vec<u8>, Vec<u8>>>> = Rc::new(RefCell::new(StableBTreeMap::init(StableMemory::default(), 8, 0)));
 }
 
 #[update(name = "multiple")]
 #[candid_method(update, rename = "multiple")]
-fn multiple(from: u32, to: u32) {
+fn multiple(from: u64, to: u64) {
     INDEX.with(|s| {
         let mut state = s.borrow_mut();
         for i in from..to {
